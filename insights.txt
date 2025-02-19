@@ -1,0 +1,100 @@
+understand you want to enhance the RAGEngineFactory pattern to handle both version-specific and use-case-specific configurations. Here's how we can improve the implementation:
+
+1. First, let's create a use-case specific settings class:
+2. Update the RAGEngineFactory to handle use-case specific settings:
+3. Update the retrievers to use use-case specific settings:
+```python
+class FAISSRetriever(BaseRetriever):
+    def __init__(self, usecase_settings: UseCaseSettings):
+        self.settings = usecase_settings
+
+    async def retrieve(self,
+                      query: str,
+                      top_k: int,
+                      index_names: List[str],
+                      metadata_filters: Optional[Dict[str, Any]] = None,
+                      fetch_k: int = 300,
+                      ) -> Tuple[List[float], List[str]]:
+        payload = {
+            "query": query,
+            "index_names": index_names,
+            "top_k": top_k,
+            "metadata_filters": metadata_filters,
+            "fetch_k": fetch_k,
+        }
+
+        client = settings.HTTP_CLIENT
+        # Use use-case specific endpoint
+        url = self.settings.get_retriever_endpoint("faiss_retrieve")
+
+        response = await client.post(url, json=payload, timeout=None)
+        response.raise_for_status()
+        
+        result = response.json()
+        return result["scores"], result["ids"]
+
+class BM25FullTextRetriever(BaseRetriever):
+    def __init__(self, usecase_settings: UseCaseSettings):
+        self.settings = usecase_settings
+
+    async def retrieve(self, query: str, top_k: int, metadata_filters: Optional[Dict[str, List[Any]]] = None
+                      ) -> Tuple[List[float], List[str]]:
+        payload = {"query": query, "top_k": top_k, "metadata_filters": metadata_filters}
+        
+        client = settings.HTTP_CLIENT
+        url = self.settings.get_retriever_endpoint("bm25_full_text_retrieve")
+        
+        # ... rest of the code ...
+ ```
+```
+
+This implementation provides:
+
+1. Version-specific implementations in separate folders (v1.0, v1.1, v2.0)
+2. Use-case specific settings and configurations
+3. Use-case specific endpoints for retrievers
+4. Cached instances per version and use-case combination
+
+
+
+
+SECOND INSIGHT
+
+
+## Trae AI
+Used 1 Reference
+
+You're right. Let's organize the settings better by separating them into different categories and implementing a proper settings management pattern. Here's how we can restructure it:
+
+1. First, let's create base settings that are static:
+```python
+from pydantic import BaseModel, AnyHttpUrl
+from typing import List, Union, Optional, Dict
+
+class StaticSettings(BaseModel):
+    """Settings that never change"""
+    PROJECT_NAME: str = "csni_service"
+    API_PREFIX: str = "/api"
+    OPENAI_LOG: str = "info"
+    HTTP_CLIENT_TIMEOUT: float = 30.0
+    TOP_K: int = 20
+    LOG_CONFIG: str = "logging.conf"
+ ```
+
+2. Create environment-dependent settings:
+3. Create use-case specific settings:
+4. Create a settings manager singleton:
+5. Update your main settings.py to use this new structure:
+Now you can use it in your code like this:
+
+This approach provides several benefits:
+
+1. Settings are properly categorized
+2. Environment variables are only loaded once
+3. Use-case specific settings are cached
+4. Static settings are truly static
+5. Clear separation of concerns
+6. Thread-safe singleton pattern
+7. Memory efficient through caching
+In your RAGEngineFactory, you would use it like this:
+
