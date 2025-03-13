@@ -11,7 +11,7 @@ class HTMLTableParser:
     def _generate_placeholder(self) -> str:
         """Generate a unique placeholder for a table."""
         self.table_counter += 1
-        return f"PLACEHOLDER YOYO Table {self.table_counter}"
+        return f"$$PLACEHOLDER YOYO Table {self.table_counter}$$"
 
     def _extract_tables(self, html: str) -> str:
         """Extract all tables from HTML and replace with placeholders using BeautifulSoup."""
@@ -85,9 +85,9 @@ class HTMLTableParser:
                 result.append(f"{indent}{header_text}:")
                 
                 # Check if cell contains a placeholder
-                if cell_text.startswith("<<PLACEHOLDER YOYO"):
+                if cell_text.startswith("$$PLACEHOLDER YOYO"):
                     # Parse nested table
-                    nested_table = self.extracted_tables[cell_text]
+                    nested_table = self.extracted_tables[cell_text.strip()]
                     nested_result = self._parse_single_table(nested_table, indent_level + 1)
                     result.append(f"{indent}    [Nested Table]")
                     result.append(nested_result)
